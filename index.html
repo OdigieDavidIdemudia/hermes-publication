@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HERMES — Harmonised Fire Observation Intelligence</title>
+<meta name="description" content="How HERMES turns NASA MODIS and VIIRS thermal detections into one defensible fire record: association-scored harmonisation, coverage-aware calendars, and a verified storage layer that proves every payload it keeps.">
+<meta property="og:title" content="HERMES — Harmonised Fire Observation Intelligence">
+<meta property="og:description" content="Two satellite generations, one fire record. Association-scored MODIS + VIIRS harmonisation, coverage-aware calendars, and verifiable payload storage.">
+<meta property="og:type" content="article">
+<meta name="author" content="David Idemudia Odigie, Godwin Enendu">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23141414'/><path d='M50 18 78 52 50 82 22 52Z' fill='none' stroke='%23F59E0B' stroke-width='7'/><circle cx='50' cy='52' r='9' fill='%23F59E0B'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script>
+  /* Pre-paint theme so an explicit choice never flashes the wrong background. */
+  (function () {
+    try {
+      var t = localStorage.getItem("hermes-theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+<style>
+/* ==========================================================================
+   Design system: personal-design-standard-v1
+   Variant: neobrutalism structure × minimalism restraint
+   Type pairing: technicalMono (Space Grotesk / Inter / JetBrains Mono)
+
+   Discipline:
+   - hard borders and visible structure, kept
+   - hard offset shadow ONLY on the hero frame and figures
+   - no background texture, no filled badges, no boxes around prose
+   - accent (#B45309 / #F59E0B) only for section numerals, links, focus,
+     one rule and the one key figure
+   - every status pairs colour with a text label
+   ========================================================================== */
+
+:root {
+  /* spacing scale — the only nine values used */
+  --xxs: 4px; --xs: 8px; --sm: 12px; --md: 16px; --lg: 24px;
+  --xl: 32px; --2xl: 48px; --3xl: 64px; --4xl: 96px;
+
+  /* type scale — ratio 1.25, base 16 */
+  --t-xs: 12.8px; --t-sm: 14.4px; --t-base: 16px; --t-lg: 20px;
+  --t-xl: 25px; --t-2xl: 31px; --t-3xl: 39px; --t-4xl: 49px;
+  --lh-tight: 1.15; --lh-body: 1.62; --lh-relaxed: 1.75;
+
+  /* motion */
+  --d-fast: 150ms; --d-base: 220ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* structure */
+  --bw: 2px; --bw-lg: 3px; --br: 4px;
+  --shadow-hard: 5px 5px 0 var(--fg);
+
+  --maxw: 1200px; --prose: 46rem;
+
+  /* colour — light */
+  --bg: #FAFAFA;
+  --surface: #F1F1F1;
+  --raised: #FFFFFF;
+  --fg: #141414;
+  --fg-2: #565656;
+  --fg-3: #7A7A7A;
+  --line: #E4E4E4;
+  --accent: #B45309;
+  --ok: #15803D;
+  --bad: #B91C1C;
+  --warn: #B45309;
+}
+
+/* Dark tokens declared once; applied by OS preference unless the reader has
+   explicitly chosen light, or by an explicit data-theme="dark". */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141414;
+    --surface: #1E1E1E;
+    --raised: #242424;
+    --fg: #FAFAFA;
+    --fg-2: #A8A8A8;
+    --fg-3: #7A7A7A;
+    --line: #2E2E2E;
+    --accent: #F59E0B;
+    --ok: #4ADE80;
+    --bad: #F87171;
+    --warn: #F59E0B;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141414;
+  --surface: #1E1E1E;
+  --raised: #242424;
+  --fg: #FAFAFA;
+  --fg-2: #A8A8A8;
+  --fg-3: #7A7A7A;
+  --line: #2E2E2E;
+  --accent: #F59E0B;
+  --ok: #4ADE80;
+  --bad: #F87171;
+  --warn: #F59E0B;
+}
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: var(--t-base);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: "Space Grotesk", Inter, sans-serif;
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  letter-spacing: -0.025em;
+  margin: 0 0 var(--md);
+}
+h1 { font-size: clamp(2.4rem, 7vw, var(--t-4xl)); }
+h2 { font-size: clamp(1.55rem, 3.6vw, var(--t-2xl)); }
+h3 { font-size: var(--t-lg); margin-top: var(--2xl); letter-spacing: -0.015em; }
+
+p, ul, ol { margin: 0 0 var(--lg); }
+ul, ol { padding-left: 1.3em; }
+li { margin-bottom: var(--xs); }
+li::marker { color: var(--fg-3); }
+strong { font-weight: 600; }
+em { font-style: italic; }
+
+a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.skip {
+  position: absolute; left: -9999px; top: 0;
+  background: var(--raised); color: var(--fg);
+  padding: var(--sm) var(--md); border: var(--bw-lg) solid var(--fg);
+  font-weight: 600; z-index: 100;
+}
+.skip:focus { left: var(--md); top: var(--md); }
+
+.max { max-width: var(--maxw); margin-inline: auto; padding-inline: var(--gutter, 24px); }
+
+/* ---------- hero ---------- */
+.hero { padding-top: var(--3xl); }
+.hero-frame {
+  border: var(--bw-lg) solid var(--fg);
+  border-radius: var(--br);
+  box-shadow: var(--shadow-hard);
+  background: var(--raised);
+  overflow: hidden;
+  transition: transform var(--d-fast) var(--ease-standard), box-shadow var(--d-fast) var(--ease-standard);
+}
+.hero-frame:hover { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--fg); }
+.hero-frame img { display: block; width: 100%; height: auto; }
+
+.title-block { margin-top: var(--2xl); }
+.title-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--md); }
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: var(--xs);
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--t-xs); font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--fg-2);
+  margin-bottom: var(--md);
+}
+.eyebrow::before { content: ""; width: 32px; height: 3px; background: var(--accent); }
+
+.dek {
+  font-size: var(--t-lg);
+  color: var(--fg-2);
+  margin: var(--lg) 0 0;
+  max-width: 42rem;
+  line-height: var(--lh-relaxed);
+}
+
+.tags { display: flex; flex-wrap: wrap; gap: var(--xs); margin-top: var(--xl); }
+.tag {
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--t-xs); font-weight: 700;
+  padding: var(--xxs) var(--sm);
+  border: var(--bw) solid var(--fg);
+  border-radius: var(--br);
+  background: transparent;
+}
+.tag--accent { color: var(--accent); border-color: var(--accent); }
+
+.byline { margin-top: var(--xl); padding-top: var(--lg); border-top: var(--bw) solid var(--line); }
+.byline-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--t-xs); font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--fg-2); margin: 0 0 var(--xs);
+}
+.byline-names { margin: 0 0 var(--sm); font-size: var(--t-base); font-weight: 500; }
+.byline-names a { color: var(--fg); text-decoration-color: var(--fg-3); }
+.byline-names .amp { color: var(--fg-3); margin-inline: var(--xs); }
+.authors { display: flex; flex-wrap: wrap; gap: var(--xs); }
+.author-chip {
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--t-xs);
+  padding: var(--xxs) var(--sm);
+  border: 1px solid var(--line);
+  border-radius: var(--br);
+  color: var(--fg-2);
+  text-decoration: none;
+}
+.author-chip:hover { border-color: var(--fg); color: var(--fg); }
+
+/* theme toggle */
+.theme-toggle {
+  display: inline-flex; align-items: center; gap: var(--xs);
+  min-height: 44px;
+  padding: var(--xs) var(--sm);
+  background: transparent;
+  border: var(--bw) solid var(--fg);
+  border-radius: var(--br);
+  color: var(--fg);
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--t-xs); font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--fg);
+  transition: background var(--d-fast) var(--ease-standard),
+              transform var(--d-fast) var(--ease-standard),
+              box-shadow var(--d-fast) var(--ease-standard);
+}
+.theme-toggle:hover { background: var(--surface); transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--fg); }
+.theme-toggle:active { transform: translate(3px, 3px); box-shadow: none; }
+.theme-toggle .glyph { font-size: var(--t-base); line-height: 1; }
+
+/* ---------- shell: TOC rail + prose ---------- */
+.shell {
+  max-width: var(--maxw);
+  margin: var(--4xl) auto 0;
+  padding-inline: var(--gutter, 24px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--2xl);
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .shell { grid-template-columns: 232px minmax(0, 1fr); gap: var(--3xl); }
+}
+.prose { max-width: var(--prose); min-width: 0; }
+.toc-desktop, .toc-m { min-width: 0; }
+
+.toc { border-top: var(--bw) solid var(--fg); padding-top: var(--md); }
+@media (min-width: 1024px) { .toc { position: sticky; top: var(--xl); } }
+.toc h2 {
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--t-xs); font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--fg-2); margin: 0 0 var(--sm);
+}
+.toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; }
+.toc li { counter-increment: toc; margin: 0; }
+.toc a {
+  display: flex; gap: var(--xs); align-items: baseline;
+  color: var(--fg-2); text-decoration: none;
+  padding: var(--xxs) 0;
+  font-size: var(--t-sm);
+  transition: color var(--d-fast) var(--ease-standard);
+}
+.toc a::before {
+  content: counter(toc, decimal-leading-zero);
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--t-xs); color: var(--accent); font-weight: 700;
+}
+.toc a:hover { color: var(--fg); }
+
+.toc-m { border-top: var(--bw) solid var(--fg); margin-bottom: var(--lg); }
+.toc-m > summary {
+  list-style: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sm);
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--t-xs); font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--fg-2);
+  min-height: 44px; padding: var(--xs) 0;
+}
+.toc-m > summary::-webkit-details-marker { display: none; }
+.toc-m > summary::after { content: "+"; font-size: var(--t-lg); color: var(--accent); line-height: 1; }
+.toc-m[open] > summary::after { content: "\2212"; }
+.toc-m[open] > summary { border-bottom: 1px solid var(--line); }
+.toc-m .toc { border-top: 0; padding-top: var(--xs); }
+.toc-m .toc a { padding: var(--sm) 0; min-height: 44px; }
+@media (min-width: 1024px) { .toc-m { display: none; } }
+@media (max-width: 1023px) { .toc-desktop { display: none; } }
+
+/* ---------- sections ---------- */
+section { margin-bottom: var(--3xl); scroll-margin-top: var(--xl); }
+section + section { border-top: var(--bw) solid var(--line); padding-top: var(--3xl); }
+.sec-num {
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--t-sm); font-weight: 700;
+  color: var(--accent);
+  display: block; margin-bottom: var(--xxs);
+}
+
+/* ---------- callouts: a left rule and a label, nothing else ---------- */
+.note {
+  border-left: 4px solid var(--accent);
+  padding: var(--xs) 0 var(--xs) var(--lg);
+  margin: var(--xl) 0;
+}
+.note > strong {
+  display: block;
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--t-xs); font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: var(--xs);
+}
+.note p:last-child { margin-bottom: 0; }
+.note--warn { border-left-color: var(--warn); }
+.note--warn > strong { color: var(--warn); }
+
+/* ---------- code ---------- */
+code {
+  font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-size: .875em;
+  background: var(--surface);
+  padding: .1em .35em;
+  border-radius: 3px;
+  overflow-wrap: anywhere;
+}
+pre {
+  background: var(--surface);
+  border: var(--bw) solid var(--fg);
+  border-radius: var(--br);
+  padding: var(--md) var(--lg);
+  overflow-x: auto;
+  margin: 0 0 var(--lg);
+}
+pre code { background: none; padding: 0; white-space: pre; font-size: var(--t-sm); }
+
+/* ---------- table: rules, not boxes ---------- */
+.tablewrap { overflow-x: auto; margin-bottom: var(--lg); }
+table { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
+th, td { text-align: left; padding: var(--sm) var(--md) var(--sm) 0; vertical-align: top; }
+th {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: var(--t-xs); font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--fg-2);
+  border-bottom: var(--bw) solid var(--fg);
+  padding-bottom: var(--xs);
+}
+tbody tr { border-bottom: 1px solid var(--line); }
+tbody tr:last-child { border-bottom: 0; }
+td.num, th.num { font-family: "JetBrains Mono", monospace; white-space: nowrap; }
+td.num { font-size: var(--t-xs); }
+
+/* status: colour is always paired with a word */
+.state { display: inline-flex; align-items: center; gap: var(--xxs); font-family: "JetBrains Mono", monospace; font-size: var(--t-xs); font-weight: 700; white-space: nowrap; }
+.state::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.state--ok { color: var(--ok); }
+.state--partial { color: var(--warn); }
+.state--na { color: var(--fg-3); }
+
+/* ---------- figures: the second earned shadow ---------- */
+figure { margin: var(--2xl) 0; }
+figure img {
+  display: block; width: 100%; height: auto;
+  border: var(--bw-lg) solid var(--fg);
+  border-radius: var(--br);
+  box-shadow: var(--shadow-hard);
+  background: var(--raised);
+}
+figcaption {
+  margin-top: var(--sm);
+  font-size: var(--t-xs);
+  color: var(--fg-2);
+  line-height: var(--lh-body);
+  max-width: 42rem;
+}
+figcaption b { color: var(--fg); }
+
+/* ---------- figures strip (numbers at a glance) ---------- */
+.facts {
+  display: grid; gap: var(--md);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: var(--xl) 0 var(--lg);
+  padding: var(--md) 0;
+  border-top: var(--bw) solid var(--fg);
+  border-bottom: var(--bw) solid var(--fg);
+}
+@media (min-width: 640px) { .facts { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.fact { min-width: 0; }
+.fact b {
+  display: block;
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--t-xl);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.fact span {
+  display: block;
+  margin-top: var(--xxs);
+  font-size: var(--t-xs);
+  color: var(--fg-2);
+  letter-spacing: .02em;
+}
+
+/* ---------- footer ---------- */
+footer {
+  max-width: var(--maxw);
+  margin: var(--4xl) auto 0;
+  padding: var(--2xl) var(--gutter, 24px) var(--3xl);
+  border-top: var(--bw) solid var(--fg);
+}
+.footer-grid { display: grid; gap: var(--lg); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 768px) { .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--2xl); } }
+.footer-grid h2 {
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--t-xs); font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--fg-2); margin: 0 0 var(--sm);
+  border: 0; padding: 0;
+}
+.footer-grid p, .footer-grid li { font-size: var(--t-sm); color: var(--fg-2); }
+.footer-grid ul { margin: 0; padding-left: 1.1em; }
+.footer-meta {
+  margin-top: var(--2xl); padding-top: var(--lg);
+  border-top: 1px solid var(--line);
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--t-xs);
+  color: var(--fg-2);
+  display: flex; flex-wrap: wrap; gap: var(--sm) var(--lg);
+  justify-content: space-between;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+  .hero-frame:hover { transform: none; box-shadow: var(--shadow-hard); }
+  .theme-toggle:hover, .theme-toggle:active { transform: none; box-shadow: 3px 3px 0 var(--fg); }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="hero max">
+  <div class="hero-frame">
+    <img src="assets/overview.webp" width="1600" height="900" alt="The HERMES overview: satellite imagery of Africa and Europe with gridded fire detections, a global activity panel, a sensor network panel and a temporal explorer.">
+  </div>
+
+  <div class="title-block">
+    <div class="title-head">
+      <span class="eyebrow">Project publication</span>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch colour theme">
+        <span class="glyph" aria-hidden="true">◐</span><span class="label">Theme</span>
+      </button>
+    </div>
+
+    <h1>HERMES</h1>
+    <p class="dek">Two satellite generations, one fire record. HERMES harmonises NASA MODIS and VIIRS thermal detections into an association-scored, coverage-aware calendar — and keeps a verifiable receipt for every payload it stores.</p>
+
+    <div class="tags">
+      <span class="tag tag--accent">harmonisation</span>
+      <span class="tag">MODIS + VIIRS</span>
+      <span class="tag">coverage-aware</span>
+      <span class="tag">FireSeal</span>
+    </div>
+
+    <div class="byline">
+      <p class="byline-label">Written by</p>
+      <p class="byline-names">
+        <a href="https://github.com/OdigieDavidIdemudia" rel="author noopener" target="_blank">David Idemudia Odigie</a>
+        <span class="amp">&amp;</span>
+        <a href="https://github.com/Enendugodwin" rel="author noopener" target="_blank">Godwin Enendu</a>
+      </p>
+      <div class="authors">
+        <a class="author-chip" href="https://github.com/OdigieDavidIdemudia" rel="author noopener" target="_blank">@OdigieDavidIdemudia</a>
+        <a class="author-chip" href="https://github.com/Enendugodwin" rel="author noopener" target="_blank">@Enendugodwin</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="toc toc-desktop" aria-label="Contents">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#problem">The problem</a></li>
+      <li><a href="#decision">The design decision</a></li>
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#lifecycle">How a record moves</a></li>
+      <li><a href="#fireseal">Provenance and deletion</a></li>
+      <li><a href="#honesty">Reading it honestly</a></li>
+      <li><a href="#limits">Limitations</a></li>
+      <li><a href="#attribution">Attribution</a></li>
+    </ol>
+  </nav>
+
+  <main class="prose" id="main">
+
+    <details class="toc-m">
+      <summary>Contents</summary>
+      <nav class="toc" aria-label="Contents">
+        <ol>
+          <li><a href="#problem">The problem</a></li>
+          <li><a href="#decision">The design decision</a></li>
+          <li><a href="#architecture">Architecture</a></li>
+          <li><a href="#lifecycle">How a record moves</a></li>
+          <li><a href="#fireseal">Provenance and deletion</a></li>
+          <li><a href="#honesty">Reading it honestly</a></li>
+          <li><a href="#limits">Limitations</a></li>
+          <li><a href="#attribution">Attribution</a></li>
+        </ol>
+      </nav>
+    </details>
+
+    <div class="note note--warn">
+      <strong>Thermal anomalies, not confirmed fires</strong>
+      <p>A hotspot is a satellite detection. It may be a wildfire, an agricultural burn, industrial heat, a false positive, or a fire hidden by cloud. Nothing in HERMES is a substitute for an emergency service, and the platform is not intended as the sole basis for protecting life or property.</p>
+    </div>
+
+    <section id="problem">
+      <span class="sec-num">01</span>
+      <h2>The problem</h2>
+      <p>The fire record is changing instruments. NASA's <strong>MODIS</strong> sensors on Terra and Aqua have carried the global active-fire record for more than two decades and are ageing out. <strong>VIIRS</strong> on Suomi-NPP, NOAA-20 and NOAA-21 continues that record at a finer resolution, with a different detection algorithm, different confidence semantics and different overpass times.</p>
+      <p>Both feeds arrive as the same shape of CSV, which makes the problem look simpler than it is. It is not a formatting problem. The two families disagree about what a detection is:</p>
+      <ul>
+        <li><strong>Resolution.</strong> MODIS reports roughly 1&nbsp;km pixels; VIIRS reports 375&nbsp;m pixels. One VIIRS footprint is a fraction of a MODIS footprint.</li>
+        <li><strong>Confidence.</strong> MODIS ships a 0–100 number plus a category. VIIRS ships a categorical <code>low</code> / <code>nominal</code> / <code>high</code>. The word <em>nominal</em> is not the same claim in both feeds.</li>
+        <li><strong>Radiometry.</strong> Brightness temperatures come from different channels and are stored under different field names. They are not interchangeable measurements.</li>
+        <li><strong>Timing.</strong> Satellites are not coincident. The same fire can be observed hours apart, or by one instrument and not the other.</li>
+      </ul>
+      <p>Add the two totals together and the result describes neither instrument. In one 30-day window of the live store, the same query returns <strong>59,272 MODIS</strong> detections and <strong>274,169 VIIRS</strong> detections. That 4.6× difference is sensitivity and pixel size, not 4.6× more fire.</p>
+
+      <div class="facts">
+        <div class="fact"><b>333,441</b><span>detections in the 30-day window</span></div>
+        <div class="fact"><b>2,373</b><span>cross-sensor associations</span></div>
+        <div class="fact"><b>3,056</b><span>estimated events</span></div>
+        <div class="fact"><b>13 / 30</b><span>days with source coverage</span></div>
+      </div>
+
+      <p>An emergency manager does not need two sensor stories. They need one calendar that says what was observed, what was not, and how confident the platform is in the difference.</p>
+    </section>
+
+    <section id="decision">
+      <span class="sec-num">02</span>
+      <h2>The design decision: association, not merging</h2>
+      <p>The tempting shortcut is to de-duplicate by proximity — collapse any two detections that are close together and in the same hour into one “fire”. That produces a clean-looking number and destroys the ability to defend it. It also silently decides that two instruments observing the same place are observing the same thing.</p>
+      <p>HERMES keeps three concepts separate, and never lets one stand in for another:</p>
+      <ol>
+        <li><strong>A raw observation</strong> is one row from one instrument at one time. It is kept as retrieved.</li>
+        <li><strong>An association</strong> is a proposal that two observations from different sensor families may describe the same hotspot. It carries a score and its components, and it is labelled <em>probable</em>, <em>possible</em> or <em>rejected</em>.</li>
+        <li><strong>An estimated event</strong> is a spatiotemporal cluster of observations. It is an estimate of a fire, not a confirmed fire, and it never implies continuous monitoring between overpasses.</li>
+      </ol>
+      <p>The harmonised series is therefore a documented de-duplication, not a calibrated fire count:</p>
+<pre><code>harmonised = MODIS + VIIRS − matched_VIIRS
+
+matched_VIIRS = distinct VIIRS detections on the same UTC day
+                with at least one probable or possible MODIS association</code></pre>
+      <p>Raw MODIS and raw VIIRS remain available beside it, unchanged. A day that has not been scanned for associations keeps its raw count, and the response says so rather than implying a complete de-duplication.</p>
+
+      <div class="note">
+        <strong>What we refuse to do</strong>
+        <p>Blend MODIS and VIIRS confidence into one probability. Compare brightness temperatures across instruments. Treat a hotspot count as a fire count. Call an association a match of physical identity. Read a missing day as a zero.</p>
+      </div>
+    </section>
+
+    <section id="architecture">
+      <span class="sec-num">03</span>
+      <h2>Architecture</h2>
+      <p>The platform is a modular monolith: separate services with explicit responsibilities, one deployable API, one console. The boundary that matters most is between <em>canonical analysis</em> — observations, associations, events, rollups — and the <em>raw provenance</em> stored behind it. Analysis never reads raw payloads to answer a question, which is why a damaged payload can fail an export without changing a single number on screen.</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Layer</th><th>Responsibility</th><th>Where it lives</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Ingestion</strong></td>
+              <td>NASA FIRMS area queries in ≤5-day windows, tiled and checkpointed so a run resumes instead of duplicating; retries with backoff; the MAP key redacted from every log line.</td>
+              <td><code>services/firms/</code>, <code>services/ingestion.py</code></td>
+            </tr>
+            <tr>
+              <td><strong>Analysis</strong></td>
+              <td>Per-sensor normalisation, cross-family association, event clustering, calendar and regional aggregation, anomaly scoring.</td>
+              <td><code>services/normalization.py</code>, <code>harmonization.py</code>, <code>events.py</code>, <code>calendar.py</code></td>
+            </tr>
+            <tr>
+              <td><strong>Storage &amp; integrity</strong></td>
+              <td>PostgreSQL canonical tables and rollups; deterministic payload blocks with dual SHA-256 receipts; export-before-delete gates.</td>
+              <td><code>services/raw_payloads.py</code>, <code>raw_archive.py</code>, <code>integrity.py</code></td>
+            </tr>
+            <tr>
+              <td><strong>Interface</strong></td>
+              <td>Versioned REST API; a React console with MapLibre, a burning calendar, analytics, regional profiles, exposure screening and exports.</td>
+              <td><code>api/v1</code>, <code>frontend/src/pages</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>The runtime stack is deliberately ordinary: <strong>FastAPI</strong> and SQLAlchemy on Python, <strong>PostgreSQL</strong> (PostGIS optional — polygon counting does not require it, SQLite runs the tests), and <strong>React + TypeScript + Vite + MapLibre</strong> in the browser. There is no AI in the analytical path: the assistant calls the same approved functions the console does, and cannot invent a measurement.</p>
+      <p>Deployment is configuration, not a rewrite: local, hybrid and cloud profiles share one storage interface, detections export to partitioned Parquet with Zstandard, and the public demo runs the frontend and the API as Vercel services against a pooled PostgreSQL instance.</p>
+    </section>
+
+    <section id="lifecycle">
+      <span class="sec-num">04</span>
+      <h2>How a record moves</h2>
+      <p>One FIRMS row becomes a calendar cell through six steps. Each step is idempotent, and each keeps enough evidence to explain the next.</p>
+
+      <h3>1 · Retrieve</h3>
+      <p>Area CSV queries are capped at five days and split into spatial tiles with per-partition checkpoints. A 200 with an empty body means <em>no detections</em>; an authentication error is never conflated with a quiet day. Standard Processing products power history; Near-Real-Time products power the live console.</p>
+
+      <h3>2 · Preserve</h3>
+      <p>Each response is kept as an immutable raw payload. FIRMS supplies no row identifier, so identity is a SHA-256 fingerprint over the source fields. Payloads are compressed into verified blocks before they reach the database (section 05).</p>
+
+      <h3>3 · Normalise</h3>
+      <p>Separate adapters per sensor family validate coordinates and timestamps, reject impossible rows instead of repairing them, keep the original confidence value <em>and</em> the original category, label brightness channels per instrument, and flag FIRMS rows whose type marks a non-fire heat source.</p>
+
+      <h3>4 · Associate</h3>
+      <p>Only observations from different sensor families are compared. Every candidate pair is scored and stored, including the ones that fail:</p>
+<pre><code>S = (w<sub>t</sub>·T + w<sub>s</sub>·G + w<sub>f</sub>·F) / Σw
+
+T = 1 − (|Δt| / window)²      quadratic temporal tolerance
+G = 1 − distance / max_distance
+F = 1 − distance / (r<sub>a</sub> + r<sub>b</sub>)   circular footprint approximation</code></pre>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Parameter</th><th class="num">Value</th><th>Why</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Temporal window</td><td class="num">180 min</td><td>Hard cut-off; satellites are minutes to hours apart.</td></tr>
+            <tr><td>Screening distance</td><td class="num">2 km</td><td>A candidate must be plausibly the same hotspot.</td></tr>
+            <tr><td>Weights</td><td class="num">0.40 / 0.45 / 0.15</td><td>Time, geodesic distance, footprint overlap.</td></tr>
+            <tr><td>Probable</td><td class="num">score ≥ 0.75</td><td>326 pairs in the measured window.</td></tr>
+            <tr><td>Possible</td><td class="num">score ≥ 0.55</td><td>2,047 pairs.</td></tr>
+            <tr><td>Rejected</td><td class="num">stored ≥ 0.35</td><td>4,851 pairs kept for audit, subtracted from nothing.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <figure>
+        <img src="assets/match-evidence.webp" width="1040" height="680" alt="A match-evidence panel: association score 0.934 labelled probable, with temporal similarity 84 percent, geographic proximity 100 percent and footprint overlap 99 percent, then the two source observations: MODIS at 80.7 MW and VIIRS at 471.6 MW." loading="lazy">
+        <figcaption><b>The score is inspectable, and so is the disagreement.</b> These two observations are 9&nbsp;m and 71&nbsp;minutes apart, yet report 80.7&nbsp;MW and 471.6&nbsp;MW with different confidence labels. The association says the pair is plausible; it does not say the instruments agree, and it is not a probability that these are the same physical fire.</figcaption>
+      </figure>
+
+      <h3>5 · Group</h3>
+      <p>Events use DBSCAN in a normalised space-time metric — 1.5&nbsp;km, 24 hours, at least two observations. Each event keeps its member observation ids, first and last detection, extent, sensor count, and separate maximum and aggregate FRP.</p>
+
+      <h3>6 · Aggregate and serve</h3>
+      <p>Day, week, month and year buckets are computed over stored detections, with six independent metrics per bucket and a completeness record on every one. The API serves the same numbers the console shows, and any cell drills back to the observations behind it.</p>
+    </section>
+
+    <section id="fireseal">
+      <span class="sec-num">05</span>
+      <h2>Provenance and deletion: FireSeal</h2>
+      <p>A platform that claims every count is traceable has to keep the raw bytes. It also has to store them in a way that does not double the database. Those two requirements collide in an obvious place: the original FIRMS payload was being written twice — once against the raw row, once again against the canonical observation.</p>
+      <p>At roughly 265 bytes per row, a payload sits below PostgreSQL's TOAST threshold, so the database never compressed it. The live store carried the same bytes twice, and the only obvious fix — pruning the duplicate — would have deleted provenance.</p>
+
+      <h3>The block algorithm</h3>
+      <p>FireSeal Core batches the payload instead of repeating it. Payloads for one acquisition day and source are serialised to JSONL with sorted keys, then gzipped at level 6 with <code>mtime=0</code>, so identical content always produces an identical hash. Each raw row keeps a <code>(block_id, block_row)</code> pointer and its inline payload is set to SQL NULL.</p>
+<pre><code>for chunk of 2000 rows, per acquisition day and source:
+    content = JSON lines (sorted keys, compact separators)
+    block   = gzip(content, level=6, mtime=0)
+    store   { compressed_sha256, uncompressed_sha256,
+              rows, sizes, codec, level, data }
+    row     → (block_id, block_row);  inline payload → NULL</code></pre>
+      <p>Reading is where the guarantee lives. A block is only trusted after its compressed SHA-256 matches, it is gunzipped, and the uncompressed SHA-256, byte count and row count all agree. A mismatch raises instead of returning wrong provenance.</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Measured on the live store</th><th class="num">Value</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Payload blocks</td><td class="num">182</td></tr>
+            <tr><td>Payloads inside them</td><td class="num">333,834</td></tr>
+            <tr><td>Uncompressed JSONL</td><td class="num">88.4 MB</td></tr>
+            <tr><td>Stored gzip</td><td class="num">7.9 MB</td></tr>
+            <tr><td>Compression</td><td class="num">11.2×</td></tr>
+            <tr><td>Raw rows with an inline payload left</td><td class="num">0</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>A representative 2,000-row block compresses from 526,889 bytes to 48,252 bytes — 10.9×. Per-row gzip, by contrast, measured 1.33× on the same data: batching is what makes this work.</p>
+
+      <h3>Deletion has a gate</h3>
+      <p>Raw payloads follow a 90-day retention policy. Before any range is removed, its archive is exported through a deterministic codec, written to a <code>.part</code> file, read back and re-hashed, then published with a single atomic rename. The deletion endpoint re-verifies that archive first; a corrupt archive blocks the delete. Nothing is overwritten or blindly retried — a failed write is quarantined with a JSON report and stays put until a human decides.</p>
+      <p>The consequence is that “raw data is never deleted” is not a policy statement. It is a property of the code path: there is no route from <em>delete</em> to <em>row</em> that does not pass through a passing receipt.</p>
+    </section>
+
+    <section id="honesty">
+      <span class="sec-num">06</span>
+      <h2>Reading it honestly</h2>
+      <p>The most useful thing a fire platform can do is be precise about what it does not know. HERMES treats coverage as a first-class state rather than an absence of data.</p>
+      <p>In the 30-day window used for this write-up, <strong>13 days carry detections and 17 have no availability record</strong>. Those 17 are drawn as hatched cells and are never counted as zero. The same rule applies at the edges of a product's coverage window: a date before the first available observation is labelled <code>before_coverage</code>, not <em>quiet</em>.</p>
+
+      <figure>
+        <img src="assets/calendar.webp" width="1240" height="677" alt="The burning calendar for October and November 2026: 333,441 detections, 13 of 30 active periods, 17 periods without data, a legend for observed, no data and anomaly states, and hatched unobserved days." loading="lazy">
+        <figcaption><b>One calendar, with its gaps intact.</b> The headline states 13 of 30 periods with detections and 17 without data. Hatched cells are unobserved, not zero. Clicking a day opens its bucket: sensor split, FRP, coverage and the observations themselves.</figcaption>
+      </figure>
+
+      <p>Anomalies are statistical claims about detections, not predictions about fires. The engine scores a day against the median of preceding observed days with a robust z-score, falls back to a standard-deviation scale when MAD is zero, and refuses to score at all when the history is too short. In this window it flags four days; each carries its baseline, sample size and a written explanation rather than a bare severity colour.</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Capability</th><th>State</th><th>Evidence</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Ingestion, normalisation, association, events</td><td><span class="state state--ok">Working</span></td><td>7,224 pairs scored; 3,056 events with provenance.</td></tr>
+            <tr><td>Calendar with coverage states</td><td><span class="state state--ok">Working</span></td><td>13 of 30 days observed, stated in the headline.</td></tr>
+            <tr><td>Anomaly screening</td><td><span class="state state--ok">Working</span></td><td>4 flags, baseline and sample size attached.</td></tr>
+            <tr><td>Regional climatology</td><td><span class="state state--partial">Partial</span></td><td>Refused, not guessed, while history is short: “insufficient history”.</td></tr>
+            <tr><td>Exposure screening</td><td><span class="state state--partial">Partial</span></td><td>Proximity to registered assets; no population dataset bundled.</td></tr>
+            <tr><td>Burned-area agreement</td><td><span class="state state--na">Not measured</span></td><td>Stated as a gap; no accuracy claim is made.</td></tr>
+            <tr><td>Forecasting</td><td><span class="state state--na">Not shipped</span></td><td>Roadmap only.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="limits">
+      <span class="sec-num">07</span>
+      <h2>Limitations and out of scope</h2>
+      <p>These are the limits a reader should carry into any decision made with this platform.</p>
+      <ul>
+        <li><strong>The record here is short.</strong> This write-up uses a 30-day window, and 17 of those days have no source coverage. Seasonal claims need years; the engine says so rather than inventing a baseline.</li>
+        <li><strong>Detection is not fire.</strong> Cloud, smoke and small fires change what is seen. A quiet day is not proof of no fire, and a hotspot is not a confirmed ignition.</li>
+        <li><strong>The instruments are not calibrated to each other.</strong> MODIS and VIIRS are reported separately wherever a comparison would be misleading. No radiometric cross-calibration has been attempted.</li>
+        <li><strong>Exposure is geography, not risk.</strong> Distance bands screen proximity to places someone registered. They do not model spread, vulnerability, wind, fuel or response capacity.</li>
+        <li><strong>De-duplication is not a fire count.</strong> The harmonised series removes VIIRS detections already associated with MODIS. The association score is not a probability of physical identity, so the result is a documented de-duplication, not a calibrated number of fires.</li>
+        <li><strong>Retention.</strong> Raw payloads are kept for 90 days and then exported and pruned; canonical analysis is retained. Payload blocks are not a substitute for the source archive.</li>
+      </ul>
+      <p>Out of scope for this release: burned-area validation, forecast skill scoring, alerting, and any claim of operational readiness for a specific agency. The public demo runs on a demo dataset.</p>
+    </section>
+
+    <section id="attribution">
+      <span class="sec-num">08</span>
+      <h2>Attribution</h2>
+      <p>HERMES is built on NASA's Fire Information for Resource Management System. Active-fire detections come from <strong>MODIS</strong> (Terra, Aqua) and <strong>VIIRS</strong> (Suomi-NPP, NOAA-20, NOAA-21). Standard Processing products power historical analysis; Near-Real-Time products power the console. Processing versions are retained and never merged silently.</p>
+      <p>The console, API, pipeline and FireSeal storage layer are our work, released under the MIT licence. The page you are reading is a single HTML file with no build step — the same artefact that is reviewed in the repository is the one that ships.</p>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <div class="footer-grid">
+    <div>
+      <h2>Authors</h2>
+      <ul>
+        <li><a href="https://github.com/OdigieDavidIdemudia" rel="author noopener" target="_blank">David Idemudia Odigie</a></li>
+        <li><a href="https://github.com/Enendugodwin" rel="author noopener" target="_blank">Godwin Enendu</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Project</h2>
+      <ul>
+        <li><a href="https://github.com/Enendugodwin/Hermes" rel="noopener" target="_blank">Source repository</a></li>
+        <li><a href="https://hermes-nasa.vercel.app" rel="noopener" target="_blank">Live console (demo data)</a></li>
+        <li>Licence: MIT</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-meta">
+    <span>Data: NASA FIRMS / LANCE</span>
+    <span>Detections are thermal anomalies, not confirmed fires</span>
+    <span>Published 2026-11-15</span>
+  </div>
+</footer>
+
+<script>
+/* Theme: defaults to the OS preference. An explicit choice wins in both
+   directions and is persisted; while no choice exists, OS changes are followed. */
+(function () {
+  var KEY = "hermes-theme";
+  var root = document.documentElement;
+  var btn = document.getElementById("theme-toggle");
+
+  function systemDark() {
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+  function current() {
+    return root.getAttribute("data-theme") || (systemDark() ? "dark" : "light");
+  }
+  function render() {
+    var mode = current();
+    var label = btn.querySelector(".label");
+    if (label) label.textContent = mode === "dark" ? "Light" : "Dark";
+    btn.setAttribute("aria-label", "Switch to " + (mode === "dark" ? "light" : "dark") + " theme");
+  }
+  btn.addEventListener("click", function () {
+    var next = current() === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem(KEY, next); } catch (e) {}
+    render();
+  });
+  if (window.matchMedia) {
+    var mq = window.matchMedia("(prefers-color-scheme: dark)");
+    var onChange = function () { if (!root.getAttribute("data-theme")) render(); };
+    if (mq.addEventListener) mq.addEventListener("change", onChange);
+    else if (mq.addListener) mq.addListener(onChange);
+  }
+  render();
+})();
+</script>
+</body>
+</html>
