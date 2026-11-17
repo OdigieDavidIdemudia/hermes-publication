@@ -24,6 +24,7 @@
   "inLanguage": "en",
   "datePublished": "2026-11-15",
   "dateModified": "2026-11-17",
+  "award": "Second place, NASA International Space Apps Challenge 2026 (Nigeria); advancing to the global category",
   "keywords": "MODIS, VIIRS, NASA FIRMS, fire detection, harmonisation, data provenance, FireSeal, geospatial",
   "author": [
     {
@@ -223,6 +224,23 @@ a:hover { text-decoration-thickness: 2px; }
   background: transparent;
 }
 .tag--accent { color: var(--accent); border-color: var(--accent); }
+
+/* recognition: a rule and a line, no badge, no fill */
+.award {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--xs) var(--md);
+  margin-top: var(--lg);
+  padding: var(--sm) 0;
+  border-top: var(--bw) solid var(--fg);
+  border-bottom: 1px solid var(--line);
+}
+.award-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--t-xs); font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--fg-2);
+}
+.award p { margin: 0; font-size: var(--t-sm); color: var(--fg-2); }
+.award strong { color: var(--fg); font-weight: 600; }
 
 .byline { margin-top: var(--xl); padding-top: var(--lg); border-top: var(--bw) solid var(--line); }
 .byline-label {
@@ -505,6 +523,11 @@ footer {
       <span class="tag">MODIS + VIIRS</span>
       <span class="tag">coverage-aware</span>
       <span class="tag">FireSeal</span>
+    </div>
+
+    <div class="award">
+      <span class="award-label">Recognition</span>
+      <p><strong>Second place</strong> — NASA International Space Apps Challenge 2026, Nigeria &middot; advancing to the global category</p>
     </div>
 
     <div class="byline">

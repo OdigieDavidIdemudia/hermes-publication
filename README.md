@@ -6,6 +6,11 @@ A publication page describing how HERMES turns NASA MODIS and VIIRS thermal dete
 defensible fire record: association-scored harmonisation, coverage-aware calendars, and a verified
 storage layer (FireSeal) that proves every payload it keeps.
 
+**Recognition:** second place, NASA International Space Apps Challenge 2026 (Nigeria); advancing to
+the global category.
+
+Live: <https://odigiedavididemudia.github.io/hermes-publication/>
+
 The page is a single self-contained `index.html` — CSS in a `<style>` block, one small theme-toggle
 script, no build step and no framework. Images are the only external assets, plus Google Fonts.
 
